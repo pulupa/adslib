@@ -30,3 +30,20 @@ QdlkTDaJTkuhuKTF-tRx3Q is the Private Library identifier for the papers related 
 ```
 python3 adslib.py QdlkTDaJTkuhuKTF-tRx3Q --bibtex fields_papers.bib --html fields_papers.html
 ```
+The output will be similar to the output below:
+```
+Loading bibcodes from input library: QdlkTDaJTkuhuKTF-tRx3Q
+Number of bibcodes retreieved: 3
+Remaining Requests: 977
+Allowed Requests: 1000
+
+Output HTML file: fields_papers.html
+Number of bibcodes in library: 3
+Remaining Big Requests: 81
+Allowed Big Requests: 100
+
+Output BibTeX file: fields_papers.bib
+Retrieved 3 abstracts, starting with number 1.  Total number selected: 3.
+Remaining Export Requests: 183
+Allowed Export Requests: 200
+```
