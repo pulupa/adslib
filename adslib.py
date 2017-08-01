@@ -121,14 +121,6 @@ parser.add_argument('--html', type=str,
                     help='File for HTML output')
 
 args = parser.parse_args()
-
-print("Loading library:", args.library)
-
-if args.bibtex:
-    print("Output BibTeX file:", args.bibtex)
-
-if args.html:
-    print("Output HTML file:", args.html)
     
 #%%
     
@@ -149,6 +141,8 @@ rows = 100
 nrequests = 0
 
 all_bibcodes = []
+
+print("\nLoading bibcodes from input library:", args.library)
 
 while True:
 
@@ -176,32 +170,30 @@ print('Remaining Requests:', request.headers['X-RateLimit-Remaining'])
 print('Allowed Requests:', request.headers['X-RateLimit-Limit'])
 
 #%%
-
 """
-Send bigquery to ADS API to return a big structure with all of the bib info
-"""
-
-big = requests.post('https://api.adsabs.harvard.edu/v1/search/bigquery', 
-        params={'q':'*:*', 'wt':'json', 'fq':'{!bitset}', 
-               'fl':'abstract,author,bibcode,bibstem,doi,first_author,' +
-               'issue,page,pub,pubdate,title,volume,year',
-               'rows':'{}'.format(len(all_bibcodes))}, 
-        headers=headers,
-        data='bibcode\n'+'\n'.join(all_bibcodes))
-
-big_json = big.json()
-
-print('Remaining Big Requests:', big.headers['X-RateLimit-Remaining'])
-print('Allowed Big Requests:', big.headers['X-RateLimit-Limit'])
-print('Number of bibcodes in library:', big_json['response']['numFound'])
-
-#%%
-
-"""
-Output ADS information as HTML
+Send bigquery to ADS API to return a big structure with all of the bib info,
+then output ADS information as HTML
 """
 
 if args.html:
+
+    print("\nOutput HTML file:", args.html)
+
+
+    big = requests.post('https://api.adsabs.harvard.edu/v1/search/bigquery', 
+                        params={'q':'*:*', 'wt':'json', 'fq':'{!bitset}', 
+                                'fl':'abstract,author,bibcode,bibstem,doi,first_author,' +
+                                'issue,page,pub,pubdate,title,volume,year',
+                                'rows':'{}'.format(len(all_bibcodes))}, 
+                                headers=headers,
+                                data='bibcode\n'+'\n'.join(all_bibcodes))
+    
+    big_json = big.json()
+    
+    print('Number of bibcodes in library:', big_json['response']['numFound'])
+    print('Remaining Big Requests:', big.headers['X-RateLimit-Remaining'])
+    print('Allowed Big Requests:', big.headers['X-RateLimit-Limit'])
+
     docs = (big_json['response'])['docs']
     
     html = ''
@@ -240,6 +232,8 @@ BibTex export
 
 if args.bibtex:
 
+    print("\nOutput BibTeX file:", args.bibtex)
+
     bib = requests.post('https://api.adsabs.harvard.edu/v1/export/bibtex', 
                         headers=headers,
                         data='{"bibcode":["'+'","'.join(all_bibcodes)+'"]}')
@@ -249,9 +243,9 @@ if args.bibtex:
     with open(args.bibtex, "w") as bibtex_file:
         bibtex_file.write(bib_json['export'])
 
+    print(bib_json['msg'])
     print('Remaining Export Requests:', bib.headers['X-RateLimit-Remaining'])
     print('Allowed Export Requests:', bib.headers['X-RateLimit-Limit'])
-    print('Export Message:', bib_json['msg'])
 
 #%%
 
