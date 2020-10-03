@@ -118,6 +118,9 @@ parser.add_argument('library', type=str,
 parser.add_argument('--bibtex', type=str,
                     help='File for BibTeX output')
 
+parser.add_argument('--bibcodes', type=str,
+                    help='File containing all bibcodes')
+
 parser.add_argument('--html', type=str, 
                     help='File for HTML output')
 
@@ -247,6 +250,19 @@ if args.bibtex:
     print(bib_json['msg'])
     print('Remaining Export Requests:', bib.headers['X-RateLimit-Remaining'])
     print('Allowed Export Requests:', bib.headers['X-RateLimit-Limit'])
+
+#%%
+"""
+Bibcodes export
+"""
+
+if args.bibcodes:
+
+    print("\nOutput Bibcodes file:", args.bibcodes)
+
+    with open(args.bibcodes, "w") as bibcodes_file:
+        for code in all_bibcodes:
+            bibcodes_file.write("%s\n" % code)
 
 #%%
 
