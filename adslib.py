@@ -17,6 +17,7 @@ import sys
 import argparse
 import calendar
 import requests
+import csv
 
 #%%
 
@@ -124,6 +125,9 @@ parser.add_argument('--bibcodes', type=str,
 parser.add_argument('--html', type=str, 
                     help='File for HTML output')
 
+parser.add_argument('--csv', type=str, 
+                    help='File for CSV output')
+
 args = parser.parse_args()
     
 #%%
@@ -169,20 +173,17 @@ while True:
     
     start += rows
 
-print('Number of bibcodes retreieved:', len(all_bibcodes))
+print('Number of bibcodes retrieved:', len(all_bibcodes))
 print('Remaining Requests:', request.headers['X-RateLimit-Remaining'])
 print('Allowed Requests:', request.headers['X-RateLimit-Limit'])
 
 #%%
 """
 Send bigquery to ADS API to return a big structure with all of the bib info,
-then output ADS information as HTML
+then output ADS information as HTML and/or CSV
 """
 
-if args.html:
-
-    print("\nOutput HTML file:", args.html)
-
+if args.html or args.csv:
 
     big = requests.post('https://api.adsabs.harvard.edu/v1/search/bigquery', 
                         params={'q':'*:*', 'wt':'json', 'fq':'{!bitset}', 
@@ -200,34 +201,64 @@ if args.html:
 
     docs = (big_json['response'])['docs']
     
-    html = ''
-    
-    for doc in docs:
-        html += '<p>\n'
+    # HTML Export
+    if args.html:
+        print("\nOutput HTML file:", args.html)
+        html = ''
         
-        html += '<strong>'
-        html += (doc['title'][0])
-        html += '</strong>\n'
+        for doc in docs:
+            html += '<p>\n'
+            
+            html += '<strong>'
+            html += (doc['title'][0])
+            html += '</strong>\n'
+            
+            html += ", ".join([initialize_names(author) for author in doc['author']]) + '\n'
         
-        html += ", ".join([initialize_names(author) for author in doc['author']]) + '\n'
-    
-        html += '<em>'
-        if 'pub' in doc:
-            html += doc['pub'] + ', '
-    
-        html += calendar.month_abbr[int((doc['pubdate'])[5:7])] + ' '
-    
-        html += doc['year']
-        html += '</em>\n'
+            html += '<em>'
+            if 'pub' in doc:
+                html += doc['pub'] + ', '
         
-        if 'doi' in doc:
-            html += '<a href="http://dx.doi.org/'+ doc['doi'][0] + '" target="_blank">DOI</a>\n'
-        html += '<a href="http://adsabs.harvard.edu/abs/' + doc['bibcode'] + '" target="_blank">ADS URL</a>\n'
+            html += calendar.month_abbr[int((doc['pubdate'])[5:7])] + ' '
         
-        html += '</p>\n'
-    
-    with open(args.html, "w") as html_file:
-        html_file.write(html)
+            html += doc['year']
+            html += '</em>\n'
+            
+            if 'doi' in doc:
+                html += '<a href="http://dx.doi.org/'+ doc['doi'][0] + '" target="_blank">DOI</a>\n'
+            html += '<a href="http://adsabs.harvard.edu/abs/' + doc['bibcode'] + '" target="_blank">ADS URL</a>\n'
+            
+            html += '</p>\n'
+        
+        with open(args.html, "w", encoding='utf-8') as html_file:
+            html_file.write(html)
+
+    # CSV Export
+    if args.csv:
+        print("\nOutput CSV file:", args.csv)
+        
+        with open(args.csv, "w", newline='', encoding='utf-8') as csv_file:
+            writer = csv.writer(csv_file)
+            # Write Header
+            writer.writerow(['Bibcode', 'Title', 'Authors', 'Publication', 'Date', 'DOI', 'ADS URL'])
+            
+            for doc in docs:
+                bibcode = doc.get('bibcode', '')
+                title = doc['title'][0] if 'title' in doc else ''
+                authors = ", ".join([initialize_names(author) for author in doc.get('author', [])])
+                pub = doc.get('pub', '')
+                
+                # Format Date safely using your existing logic
+                try:
+                    date = calendar.month_abbr[int((doc['pubdate'])[5:7])] + ' ' + doc['year']
+                except (KeyError, ValueError, TypeError):
+                    date = doc.get('year', '')
+                    
+                doi = doc['doi'][0] if 'doi' in doc else ''
+                ads_url = 'http://adsabs.harvard.edu/abs/' + bibcode
+                
+                # Write row
+                writer.writerow([bibcode, title, authors, pub, date, doi, ads_url])
 
 #%%
 """
@@ -244,7 +275,7 @@ if args.bibtex:
 
     bib_json = bib.json()
 
-    with open(args.bibtex, "w") as bibtex_file:
+    with open(args.bibtex, "w", encoding='utf-8') as bibtex_file:
         bibtex_file.write(bib_json['export'])
 
     print(bib_json['msg'])
@@ -260,7 +291,7 @@ if args.bibcodes:
 
     print("\nOutput Bibcodes file:", args.bibcodes)
 
-    with open(args.bibcodes, "w") as bibcodes_file:
+    with open(args.bibcodes, "w", encoding='utf-8') as bibcodes_file:
         for code in all_bibcodes:
             bibcodes_file.write("%s\n" % code)
 
