@@ -233,11 +233,13 @@ if args.html or args.csv:
         with open(args.html, "w", encoding='utf-8') as html_file:
             html_file.write(html)
 
-    # CSV Export
+# CSV Export
     if args.csv:
         print("\nOutput CSV file:", args.csv)
         
-        with open(args.csv, "w", newline='', encoding='utf-8') as csv_file:
+        # 'utf-8-sig' adds a Byte Order Mark (BOM) so programs like Excel 
+        # automatically recognize it as UTF-8 and display special characters properly.
+        with open(args.csv, "w", newline='', encoding='utf-8-sig') as csv_file:
             writer = csv.writer(csv_file)
             # Write Header
             writer.writerow(['Bibcode', 'Title', 'Authors', 'Publication', 'Date', 'DOI', 'ADS URL'])
